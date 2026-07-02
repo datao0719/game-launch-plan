@@ -326,6 +326,7 @@ socket.on("viewers", (n)=>{
 
 socket.on("meta", (meta)=>{
   PLATFORMS = meta.PLATFORMS; METHODS = meta.METHODS; MONTHS = meta.MONTHS; DATE_COLS = meta.DATE_COLS;
+  buildTable();
 });
 
 socket.on("state", (state)=>{
