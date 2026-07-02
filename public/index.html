@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三大平台遊戲上線時程規劃總覽（共用即時版）</title>
+<style>
+  :root{
+    --launch-bg:#e0f2fe;      --launch-line:#38bdf8;
+    --exclusive-bg:#f3e8ff;   --exclusive-line:#c084fc;
+    --allplatform-bg:#dcfce7; --allplatform-line:#4ade80;
+    --none-bg:#fff7ed;        --none-line:#fb923c;
+
+    --casino:#334155;
+    --mainstream:#e11d48;
+    --custom:#9333ea;
+    --outsource:#0284c7;
+
+    --head:#0f172a;
+    --head-soft:#1e293b;
+    --head-soft2:#293548;
+    --border:#e2e8f0;
+    --platform-border:#334155;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    background:#eef1f6;
+    color:#1c1f26;
+    padding:18px 22px;
+  }
+  h1{ font-size:22px; margin:0 0 3px; color:var(--head); letter-spacing:.5px; font-weight:800;}
+  .subtitle{ color:#697180; font-size:13px; margin-bottom:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .conn-dot{ width:9px; height:9px; border-radius:50%; background:#cbd5e1; display:inline-block; }
+  .conn-dot.online{ background:#22c55e; }
+  .conn-dot.offline{ background:#ef4444; }
+  .viewer-badge{
+    font-size:12px; font-weight:700; color:#334155; background:#eef2ff;
+    border:1px solid #c7d2fe; border-radius:14px; padding:3px 10px;
+  }
+
+  /* ---------- unified control panel ---------- */
+  .control-panel{
+    background:#fff; border:1px solid var(--border); border-radius:14px;
+    padding:14px 22px; margin-bottom:14px;
+    box-shadow:0 2px 10px rgba(20,30,60,0.05);
+  }
+  .panel-row{ display:flex; flex-wrap:wrap; align-items:center; gap:22px; padding:10px 0; }
+  .panel-divider{ border-top:1px solid var(--border); }
+  .panel-row:first-child{ padding-top:2px; }
+  .panel-row:last-child{ padding-bottom:2px; }
+
+  .legend-group{ display:flex; align-items:center; gap:9px; }
+  .legend-title{ font-size:12px; font-weight:800; color:#8b93a1; letter-spacing:1px; white-space:nowrap; }
+  .legend-items{ display:flex; gap:7px; flex-wrap:wrap; }
+
+  .tag{
+    cursor:pointer; border-radius:8px; padding:5px 12px; font-size:13px;
+    user-select:none; transition:all .15s ease; border:1.5px solid transparent;
+  }
+  .tag.active{ box-shadow:0 0 0 2.5px var(--head) inset; }
+  .tag.tag-launch{ background:var(--launch-bg); border-color:var(--launch-line); color:#0369a1; font-weight:700;}
+  .tag.tag-exclusive{ background:var(--exclusive-bg); border-color:var(--exclusive-line); color:#7e22ce; font-weight:700;}
+  .tag.tag-allplatform{ background:var(--allplatform-bg); border-color:var(--allplatform-line); color:#15803d; font-weight:700;}
+  .tag.tag-none{ background:var(--none-bg); border-color:var(--none-line); color:#c2410c; font-weight:700;}
+
+  .tag.tag-cat{ display:flex; align-items:center; gap:6px; background:#fff; border-color:var(--border);}
+  .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; flex:0 0 auto;}
+  .dot.casino{ background:var(--casino); }
+  .dot.mainstream{ background:var(--mainstream); }
+  .dot.custom{ background:var(--custom); }
+  .dot.outsource{ background:var(--outsource); }
+  .tag-cat.cat-casino{ color:var(--casino); }
+  .tag-cat.cat-mainstream{ color:var(--mainstream); font-weight:700;}
+  .tag-cat.cat-custom{ color:var(--custom); font-weight:700;}
+  .tag-cat.cat-outsource{ color:var(--outsource); font-weight:700;}
+
+  .tag.tag-office{ background:#fff; border-color:var(--border); color:#475569; font-weight:700;}
+
+  .reset-btn{
+    font-size:12.5px; color:#8b93a1;
+    border:1px dashed #cfd3da; border-radius:18px; padding:6px 14px; cursor:pointer; background:#fff;
+    font-weight:600; margin-left:auto;
+  }
+  .reset-btn:hover{ color:var(--head); border-color:var(--head); }
+
+  .flabel{ font-size:12px; font-weight:800; color:#8b93a1; letter-spacing:1px; white-space:nowrap; }
+  .pbtn{
+    padding:6px 18px; border-radius:20px; border:1.5px solid var(--border);
+    background:#fff; color:#64748b; font-size:13px; font-weight:700; cursor:pointer;
+    transition:all .15s ease;
+  }
+  .pbtn:hover{ border-color:#94a3b8; color:#334155; }
+  .pbtn.active{ background:var(--head); color:#fff; border-color:var(--head); }
+
+  .restore-btn{
+    font-size:12.5px; font-weight:700; color:#8b93a1; background:#fff;
+    border:1px dashed #cfd3da; border-radius:18px; padding:6px 14px; cursor:pointer;
+    margin-left:auto;
+  }
+  .restore-btn:hover{ color:#b91c1c; border-color:#b91c1c; }
+
+  /* ---------- add-tag panel + staging area ---------- */
+  .creator{ align-items:center; }
+  .creator .field{ display:flex; align-items:center; gap:8px; }
+  .creator .field-label{ font-size:12px; font-weight:800; color:#8b93a1; letter-spacing:1px; white-space:nowrap; }
+  .creator input[type="text"]{
+    font-size:13.5px; padding:6px 12px; border-radius:8px; border:1.5px solid var(--border);
+    min-width:180px; font-family:inherit;
+  }
+  .creator input[type="text"]:focus{ outline:none; border-color:var(--head); }
+  .option-group{ display:flex; gap:6px; flex-wrap:wrap; }
+  .opt-btn{
+    cursor:pointer; border-radius:8px; padding:5px 12px; font-size:12.5px; font-weight:700;
+    border:1.5px solid var(--border); background:#fff; color:#64748b; user-select:none;
+    transition:all .15s ease;
+  }
+  .opt-btn.cat-casino.selected{ background:#334155; border-color:#334155; color:#fff; }
+  .opt-btn.cat-mainstream.selected{ background:var(--mainstream); border-color:var(--mainstream); color:#fff; }
+  .opt-btn.cat-custom.selected{ background:var(--custom); border-color:var(--custom); color:#fff; }
+  .opt-btn.cat-outsource.selected{ background:var(--outsource); border-color:var(--outsource); color:#fff; }
+  .opt-btn.office-north.selected{ background:var(--head); border-color:var(--head); color:#fff; }
+  .opt-btn.office-central.selected{ background:var(--head); border-color:var(--head); color:#fff; }
+  .add-tag-btn{
+    font-size:13px; font-weight:700; color:#fff; background:var(--head);
+    border:none; border-radius:8px; padding:8px 18px; cursor:pointer;
+  }
+  .add-tag-btn:hover{ opacity:.88; }
+  .add-tag-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  .staging-row{ align-items:flex-start; }
+  .staging-chips{ display:flex; flex-wrap:wrap; gap:8px; min-height:0; flex:1; }
+  .staging-chips.drag-over{ background:#eef4ff; border-radius:10px; }
+  .staging-empty{ color:#b8c0cd; font-size:13px; padding:4px 0; }
+
+  /* ---------- table ---------- */
+  .table-card{
+    background:#fff; border:1px solid var(--border); border-radius:16px;
+    overflow:hidden; box-shadow:0 4px 16px rgba(20,30,60,0.07);
+  }
+  .table-scroll{ overflow:auto; max-height:78vh; }
+  table{ border-collapse:separate; border-spacing:0; width:100%; min-width:2200px; }
+
+  thead th{
+    background:var(--head-soft2); color:#fff; font-size:15px; font-weight:700;
+    padding:13px 6px; border-bottom:1px solid rgba(255,255,255,0.1);
+    position:sticky; top:0; z-index:5; letter-spacing:1px;
+  }
+  thead .date-header th{ background:var(--head-soft); font-size:14px; font-weight:600; top:48px; z-index:5;}
+  thead th.corner1{ left:0; z-index:8; background:var(--head) !important; }
+  thead th.corner2{ left:96px; z-index:8; background:var(--head) !important; }
+
+  tbody th.platform-cell{
+    position:sticky; left:0; z-index:3;
+    background:#e2e8f0; color:var(--head); font-size:18px; font-weight:800;
+    border-right:1px solid var(--border); border-bottom:1px solid var(--border);
+    letter-spacing:2px; padding:10px 6px; min-width:96px;
+  }
+  tbody th.method-cell{
+    position:sticky; left:96px; z-index:3;
+    background:#f7f8fb; color:#334155; font-size:14.5px; font-weight:700;
+    border-right:2px solid #cbd5e1; border-bottom:1px solid var(--border);
+    padding:12px 10px; min-width:118px; text-align:left;
+  }
+  tbody td{
+    border-bottom:1px solid var(--border); border-right:1px solid var(--border);
+    padding:6px; vertical-align:top; min-width:132px;
+  }
+
+  .platform-group:not(:last-child) tr:last-child td,
+  .platform-group:not(:last-child) tr:last-child th{ border-bottom:3px solid var(--platform-border); }
+
+  .cell-stack{ display:flex; flex-direction:column; gap:5px; min-height:32px; justify-content:center; }
+  .empty-hint{ color:#dfe3e8; font-size:14px; text-align:center; padding:6px 0; }
+
+  .game-chip{
+    position:relative;
+    border-radius:8px; padding:7px 10px; display:flex; align-items:center; gap:7px;
+    background:#fff; box-shadow:0 1px 3px rgba(20,30,60,0.08);
+    border-left:4px solid var(--casino);
+    transition:opacity .15s ease, transform .15s ease, box-shadow .15s ease;
+    cursor:grab;
+  }
+  .game-chip:active{ cursor:grabbing; }
+  .game-chip.dragging{ opacity:.35; box-shadow:0 4px 10px rgba(20,30,60,0.2); }
+  .game-chip .name{ font-size:14px; line-height:1.35; word-break:break-word; font-weight:600;}
+
+  .game-chip.cat-casino{ border-left-color:var(--casino); }
+  .game-chip.cat-mainstream{ border-left-color:var(--mainstream); }
+  .game-chip.cat-custom{ border-left-color:var(--custom); }
+  .game-chip.cat-outsource{ border-left-color:var(--outsource); }
+
+  .name.cat-casino{ color:var(--casino); font-weight:500; }
+  .name.cat-mainstream{ color:var(--mainstream); font-weight:700; }
+  .name.cat-custom{ color:var(--custom); font-weight:800; }
+  .name.cat-outsource{ color:var(--outsource); font-weight:700; }
+
+  .dimmed{ opacity:.1; transform:scale(.95); }
+  .note{ font-size:12px; color:#8b93a1; margin-top:8px; line-height:1.5; }
+
+  .cell-stack.drag-over{ background:#eef4ff; outline:2px dashed #93b4f5; outline-offset:-2px; border-radius:6px; }
+
+  .chip-del{
+    position:absolute; top:-7px; right:-7px; width:18px; height:18px; border-radius:50%;
+    background:#94a3b8; color:#fff; font-size:11px; line-height:18px; text-align:center;
+    cursor:pointer; display:none; font-weight:700;
+  }
+  .game-chip:hover .chip-del{ display:block; }
+  .chip-del:hover{ background:#ef4444; }
+
+  .toast{
+    position:fixed; top:24px; left:50%; transform:translateX(-50%) translateY(-16px);
+    background:#1e293b; color:#fff; padding:14px 22px; border-radius:12px; font-size:14.5px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25); z-index:50; opacity:0; pointer-events:none;
+    transition:all .25s ease; max-width:640px; line-height:1.5; font-weight:600;
+    white-space:pre-line;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.warn{ background:#7c2d12; }
+</style>
+</head>
+<body>
+
+<h1>三大平台遊戲上線時程規劃總覽</h1>
+<div class="subtitle">
+  <span><span class="conn-dot" id="connDot"></span> <span id="connText">連線中…</span></span>
+  <span class="viewer-badge" id="viewerBadge">👀 1 人正在瀏覽</span>
+  <span>所有調整會即時同步給目前正在看這個網址的所有人</span>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div class="control-panel">
+  <div class="panel-row">
+    <div class="legend-group">
+      <div class="legend-title">上線方式</div>
+      <div class="legend-items">
+        <span class="tag tag-launch" data-filter-bg="launch">首發</span>
+        <span class="tag tag-exclusive" data-filter-bg="exclusive">客製獨家</span>
+        <span class="tag tag-allplatform" data-filter-bg="allplatform">新遊戲全平台</span>
+        <span class="tag tag-none" data-filter-bg="none">一般上架</span>
+      </div>
+    </div>
+    <div class="legend-group">
+      <div class="legend-title">遊戲類別</div>
+      <div class="legend-items">
+        <span class="tag tag-cat cat-casino" data-filter-cat="casino"><span class="dot casino"></span>賭場遊戲</span>
+        <span class="tag tag-cat cat-mainstream" data-filter-cat="mainstream"><span class="dot mainstream"></span>主流遊戲</span>
+        <span class="tag tag-cat cat-custom" data-filter-cat="custom"><span class="dot custom"></span>客製遊戲</span>
+        <span class="tag tag-cat cat-outsource" data-filter-cat="outsource"><span class="dot outsource"></span>外包遊戲</span>
+      </div>
+    </div>
+    <div class="legend-group">
+      <div class="legend-title">開發辦公室</div>
+      <div class="legend-items">
+        <span class="tag tag-office" data-filter-office="north">💼 北辦製作</span>
+        <span class="tag tag-office" data-filter-office="central">🏬 中辦製作</span>
+      </div>
+    </div>
+    <div class="reset-btn" id="resetBtn">清除所有篩選</div>
+  </div>
+
+  <div class="panel-row panel-divider">
+    <span class="flabel">平台篩選</span>
+    <button class="pbtn active" data-platform="all">全部平台</button>
+    <button class="pbtn" data-platform="PT">PT</button>
+    <button class="pbtn" data-platform="BP">BP</button>
+    <button class="pbtn" data-platform="OKB">OKB</button>
+    <button class="restore-btn" id="restoreBtn">還原初始規劃（影響所有人）</button>
+  </div>
+
+  <div class="panel-row panel-divider creator">
+    <div class="field">
+      <span class="field-label">新增遊戲標籤</span>
+      <input type="text" id="newGameName" placeholder="輸入遊戲名稱">
+    </div>
+    <div class="field">
+      <span class="field-label">類別</span>
+      <div class="option-group" id="newGameCatGroup">
+        <span class="opt-btn cat-casino" data-cat="casino">賭場遊戲</span>
+        <span class="opt-btn cat-mainstream" data-cat="mainstream">主流遊戲</span>
+        <span class="opt-btn cat-custom" data-cat="custom">客製遊戲</span>
+        <span class="opt-btn cat-outsource" data-cat="outsource">外包遊戲</span>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label">辦公室</span>
+      <div class="option-group" id="newGameOfficeGroup">
+        <span class="opt-btn office-north" data-office="north">💼 北辦</span>
+        <span class="opt-btn office-central" data-office="central">🏬 中辦</span>
+      </div>
+    </div>
+    <button class="add-tag-btn" id="addTagBtn">新增到暫存區</button>
+  </div>
+
+  <div class="panel-row panel-divider staging-row">
+    <span class="flabel">暫存區</span>
+    <div class="staging-chips" id="stagingChips"></div>
+  </div>
+</div>
+
+<div class="table-card">
+  <div class="table-scroll">
+    <table id="mainTable"></table>
+  </div>
+</div>
+<div class="note">＊「一般上架」列收錄當期仍在線上、但非首發／獨家／全平台批次的遊戲，僅供對照。開發辦公室可透過上方「開發辦公室」標籤篩選查看。直接拖曳遊戲標籤即可調整上線月份、上線方式或平台——所有調整會即時存到伺服器，並同步推送給所有正在瀏覽這個網址的人。系統會檢查「只有類別為客製遊戲的標籤才能放進客製獨家」「客製獨家（已賣斷）」與「首發優先」規則，違反規則的調整會被擋下並提示原因。滑鼠移到標籤右上角可以刪除標籤。「還原初始規劃」會讓所有人的畫面都回到試算表原始版本，請謹慎使用。</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+let PLATFORMS = [], METHODS = [], MONTHS = [], DATE_COLS = [];
+let STATE = null;
+
+const connDot = document.getElementById("connDot");
+const connText = document.getElementById("connText");
+socket.on("connect", ()=>{ connDot.className="conn-dot online"; connText.textContent="已連線"; });
+socket.on("disconnect", ()=>{ connDot.className="conn-dot offline"; connText.textContent="連線中斷，嘗試重新連線…"; });
+socket.on("connect_error", ()=>{ connDot.className="conn-dot offline"; connText.textContent="無法連線到伺服器"; });
+
+socket.on("viewers", (n)=>{
+  document.getElementById("viewerBadge").textContent = `👀 ${n} 人正在瀏覽`;
+});
+
+socket.on("meta", (meta)=>{
+  PLATFORMS = meta.PLATFORMS; METHODS = meta.METHODS; MONTHS = meta.MONTHS; DATE_COLS = meta.DATE_COLS;
+});
+
+socket.on("state", (state)=>{
+  STATE = state;
+  buildTable();
+});
+
+let toastTimer = null;
+function showToast(msg, isWarn){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.toggle("warn", !!isWarn);
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  const duration = Math.max(isWarn ? 5200 : 2600, msg.length * 90);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), duration);
+}
+socket.on("action-rejected", ({message})=> showToast("⚠ 無法放置：\n" + message, true));
+
+function chipHtml(chip){
+  return `<div class="game-chip cat-${chip.cat}" draggable="true" data-uid="${chip.uid}" data-cat="${chip.cat}" data-office="${chip.office||''}">
+    <span class="name cat-${chip.cat}">${chip.name}</span>
+    <span class="chip-del" data-del-uid="${chip.uid}" title="刪除標籤">×</span>
+  </div>`;
+}
+function cellHtml(chips, p, mKey, idx){
+  const inner = chips.length ? chips.map(chipHtml).join("") : `<div class="empty-hint">－</div>`;
+  return `<td><div class="cell-stack" data-platform="${p}" data-method="${mKey}" data-index="${idx}">${inner}</div></td>`;
+}
+
+function buildTable(){
+  if(!STATE || !PLATFORMS.length) return;
+
+  let thead = `<thead>
+    <tr class="month-header">
+      <th class="corner1" rowspan="2">平台</th>
+      <th class="corner2" rowspan="2">上線方式</th>
+      ${MONTHS.map(m=>`<th colspan="${m.dates.length}">${m.label}</th>`).join("")}
+    </tr>
+    <tr class="date-header">
+      ${DATE_COLS.map(d=>`<th>${d}</th>`).join("")}
+    </tr>
+  </thead>`;
+
+  let tbody = "";
+  PLATFORMS.forEach(p=>{
+    tbody += `<tbody class="platform-group" data-platform-group="${p}">`;
+    METHODS.forEach((m, mi)=>{
+      tbody += `<tr class="method-row" data-method="${m.key}">`;
+      if(mi===0) tbody += `<th class="platform-cell" rowspan="${METHODS.length}">${p}</th>`;
+      tbody += `<th class="method-cell">${m.label}</th>`;
+      for(let i=0;i<DATE_COLS.length;i++){
+        tbody += cellHtml(STATE[p][m.key][i], p, m.key, i);
+      }
+      tbody += "</tr>";
+    });
+    tbody += "</tbody>";
+  });
+
+  document.getElementById("mainTable").innerHTML = thead + tbody;
+
+  const stagingEl = document.getElementById("stagingChips");
+  stagingEl.innerHTML = STATE.staging.length
+    ? STATE.staging.map(chipHtml).join("")
+    : `<div class="staging-empty">尚無暫存標籤，可用上方表單新增。</div>`;
+
+  attachDragHandlers();
+  attachDeleteHandlers();
+  applyFilter();
+}
+
+let activeBg = null, activeCat = null, activeOffice = null, activePlatform = "all";
+
+function applyFilter(){
+  document.querySelectorAll(".game-chip").forEach(c=>{
+    const matchCat = !activeCat || c.dataset.cat === activeCat;
+    const matchOffice = !activeOffice || c.dataset.office === activeOffice;
+    c.classList.toggle("dimmed", !(matchCat && matchOffice));
+  });
+  document.querySelectorAll("tbody tr.method-row").forEach(tr=>{
+    const methodKey = tr.dataset.method;
+    tr.style.opacity = (!activeBg || activeBg===methodKey) ? "1" : ".2";
+  });
+  document.querySelectorAll("tbody.platform-group").forEach(tb=>{
+    const p = tb.dataset.platformGroup;
+    tb.style.display = (activePlatform==="all" || activePlatform===p) ? "" : "none";
+  });
+}
+
+// ---------- drag & drop (optimistic UI: wait for server "state"/"action-rejected") ----------
+let draggedUid = null;
+
+function attachDragHandlers(){
+  document.querySelectorAll(".game-chip").forEach(chip=>{
+    chip.addEventListener("dragstart", (e)=>{
+      draggedUid = Number(chip.dataset.uid);
+      chip.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(draggedUid));
+    });
+    chip.addEventListener("dragend", ()=>{
+      chip.classList.remove("dragging");
+      document.querySelectorAll(".drag-over").forEach(el=>el.classList.remove("drag-over"));
+    });
+  });
+
+  document.querySelectorAll(".cell-stack").forEach(cell=>{
+    cell.addEventListener("dragover", (e)=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      cell.classList.add("drag-over");
+    });
+    cell.addEventListener("dragleave", ()=>{ cell.classList.remove("drag-over"); });
+    cell.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      cell.classList.remove("drag-over");
+      const uid = draggedUid !== null ? draggedUid : Number(e.dataTransfer.getData("text/plain"));
+      if(!uid) return;
+      socket.emit("move-chip", {
+        uid,
+        targetP: cell.dataset.platform,
+        targetM: cell.dataset.method,
+        targetIdx: Number(cell.dataset.index),
+      });
+      draggedUid = null;
+    });
+  });
+
+  const stagingEl = document.getElementById("stagingChips");
+  stagingEl.addEventListener("dragover", (e)=>{
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    stagingEl.classList.add("drag-over");
+  });
+  stagingEl.addEventListener("dragleave", ()=>{ stagingEl.classList.remove("drag-over"); });
+  stagingEl.addEventListener("drop", (e)=>{
+    e.preventDefault();
+    stagingEl.classList.remove("drag-over");
+    const uid = draggedUid !== null ? draggedUid : Number(e.dataTransfer.getData("text/plain"));
+    if(!uid) return;
+    socket.emit("move-to-staging", { uid });
+    draggedUid = null;
+  });
+}
+
+function attachDeleteHandlers(){
+  document.querySelectorAll(".chip-del").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const uid = Number(btn.dataset.delUid);
+      const chipName = btn.closest(".game-chip").querySelector(".name").textContent;
+      if(!confirm(`確定要刪除標籤「${chipName}」嗎？這會影響所有人看到的畫面。`)) return;
+      socket.emit("delete-chip", { uid });
+    });
+  });
+}
+
+// ---------- add-tag creator ----------
+let selectedCat = null, selectedOffice = null;
+document.querySelectorAll("#newGameCatGroup .opt-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    selectedCat = (selectedCat===btn.dataset.cat) ? null : btn.dataset.cat;
+    document.querySelectorAll("#newGameCatGroup .opt-btn").forEach(b=>b.classList.remove("selected"));
+    if(selectedCat) btn.classList.add("selected");
+  });
+});
+document.querySelectorAll("#newGameOfficeGroup .opt-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    selectedOffice = (selectedOffice===btn.dataset.office) ? null : btn.dataset.office;
+    document.querySelectorAll("#newGameOfficeGroup .opt-btn").forEach(b=>b.classList.remove("selected"));
+    if(selectedOffice) btn.classList.add("selected");
+  });
+});
+document.getElementById("addTagBtn").addEventListener("click", ()=>{
+  const nameInput = document.getElementById("newGameName");
+  const name = nameInput.value.trim();
+  if(!name){ showToast("請先輸入遊戲名稱", true); nameInput.focus(); return; }
+  if(!selectedCat){ showToast("請選擇遊戲類別", true); return; }
+  if(!selectedOffice){ showToast("請選擇開發辦公室", true); return; }
+  socket.emit("add-chip", { name, cat: selectedCat, office: selectedOffice });
+  nameInput.value = "";
+  selectedCat = null; selectedOffice = null;
+  document.querySelectorAll("#newGameCatGroup .opt-btn, #newGameOfficeGroup .opt-btn").forEach(b=>b.classList.remove("selected"));
+});
+
+document.getElementById("restoreBtn").addEventListener("click", ()=>{
+  if(!confirm("確定要還原成試算表原始規劃嗎？這會清除目前所有人做過的調整與暫存標籤，且無法復原。")) return;
+  socket.emit("restore-plan");
+});
+
+document.querySelectorAll("[data-filter-bg]").forEach(tag=>{
+  tag.addEventListener("click", ()=>{
+    const val = tag.dataset.filterBg;
+    activeBg = (activeBg === val) ? null : val;
+    document.querySelectorAll("[data-filter-bg]").forEach(t=>t.classList.remove("active"));
+    if(activeBg) tag.classList.add("active");
+    applyFilter();
+  });
+});
+document.querySelectorAll("[data-filter-cat]").forEach(tag=>{
+  tag.addEventListener("click", ()=>{
+    const val = tag.dataset.filterCat;
+    activeCat = (activeCat === val) ? null : val;
+    document.querySelectorAll("[data-filter-cat]").forEach(t=>t.classList.remove("active"));
+    if(activeCat) tag.classList.add("active");
+    applyFilter();
+  });
+});
+document.querySelectorAll("[data-filter-office]").forEach(tag=>{
+  tag.addEventListener("click", ()=>{
+    const val = tag.dataset.filterOffice;
+    activeOffice = (activeOffice === val) ? null : val;
+    document.querySelectorAll("[data-filter-office]").forEach(t=>t.classList.remove("active"));
+    if(activeOffice) tag.classList.add("active");
+    applyFilter();
+  });
+});
+document.querySelectorAll(".pbtn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    activePlatform = btn.dataset.platform;
+    document.querySelectorAll(".pbtn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    applyFilter();
+  });
+});
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  activeBg=null; activeCat=null; activeOffice=null; activePlatform="all";
+  document.querySelectorAll(".tag").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".pbtn").forEach(b=>b.classList.remove("active"));
+  document.querySelector('.pbtn[data-platform="all"]').classList.add("active");
+  applyFilter();
+});
+</script>
+
+</body>
+</html>
