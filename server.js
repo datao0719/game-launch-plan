@@ -174,8 +174,9 @@ let viewerCount = 0;
 io.on("connection", (socket) => {
   viewerCount++;
   io.emit("viewers", viewerCount);
-  socket.emit("state", STATE);
+
   socket.emit("meta", { PLATFORMS, METHODS, MONTHS, DATE_COLS });
+  socket.emit("state", STATE);
 
   socket.on("disconnect", () => {
     viewerCount = Math.max(0, viewerCount - 1);
