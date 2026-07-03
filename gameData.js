@@ -1,7 +1,7 @@
 // Shared static data: platforms, methods, month/date columns, and the original
 // spreadsheet-derived baseline plan (RAW). Server-only module (CommonJS).
 
-const PLATFORMS = ["PT", "BP", "OKB"];
+const PLATFORMS = ["PT", "BP", "OKB", "CP"];
 
 const METHODS = [
   { key: "launch", label: "首發" },
@@ -49,6 +49,14 @@ const RAW = {
     exclusive: [null, null, null, null, null, null, G("SEX BOMB Split", "north", "custom"), null, G("SEX BOMB WILD", "north", "custom"), null, G("SEXY BOMB MULTIPLE WILD", "north", "custom"), null, G("SEX BOMB MIX", "north", "custom"), null, null, null, null, null],
     allplatform: [null, null, null, G("彩罐熱舞1000", "central", "mainstream"), null, G("放克猿", "north", "mainstream"), null, G("Olympus 2500", "central", "mainstream"), null, null, null, G("Super Bang Bang", "central", "mainstream"), G("寶石系列", "central", "mainstream"), G("福來發-財源滾滾", "north", "casino"), G("福來發-金將熊貓", "north", "casino"), G("Wild Bandito 亡靈", "north", "mainstream"), G("金龍發-金海龍王", "north", "casino"), null],
     none: [null, null, G("小魔女", "north", "mainstream"), null, G("多採多汁", "central", "mainstream"), G("龍來發-花好月圓", "north", "casino"), null, G("金碌發-春節盛典", "central", "casino"), G("雷神爆金1000", "central", "mainstream"), G("Mike C", "central", "mainstream"), G("金爆連連-孔雀迎福", "central", "casino"), G("Super Coins", "north", "mainstream"), null, null, G("Buffalo", "north", "mainstream"), G("金齒乾坤", "central", "outsource"), null, null],
+  },
+  // CP is a newly added platform (no history yet) — starts fully empty so the
+  // team can populate it themselves via drag-and-drop / the add-tag form.
+  CP: {
+    launch: new Array(DATE_COLS.length).fill(null),
+    exclusive: new Array(DATE_COLS.length).fill(null),
+    allplatform: new Array(DATE_COLS.length).fill(null),
+    none: new Array(DATE_COLS.length).fill(null),
   },
 };
 

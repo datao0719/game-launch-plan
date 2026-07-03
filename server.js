@@ -59,10 +59,30 @@ function recomputeUidCounter(state) {
 
 async function initState() {
   const loaded = await store.loadState();
-  if (loaded && PLATFORMS.every((p) => loaded[p])) {
+  // "some" (not "every") so adding a brand-new platform/method later doesn't
+  // wipe out everything that was already saved for the existing ones.
+  if (loaded && PLATFORMS.some((p) => loaded[p])) {
     STATE = loaded;
     if (!STATE.staging) STATE.staging = [];
+    let migrated = false;
+    PLATFORMS.forEach((p) => {
+      if (!STATE[p]) {
+        STATE[p] = {};
+        migrated = true;
+      }
+      METHODS.forEach((m) => {
+        if (!STATE[p][m.key]) {
+          const seedRow = (RAW[p] && RAW[p][m.key]) || new Array(DATE_COLS.length).fill(null);
+          STATE[p][m.key] = toStateRow(seedRow);
+          migrated = true;
+        }
+      });
+    });
     recomputeUidCounter(STATE);
+    if (migrated) {
+      console.log("Migrated stored state: added new platform(s)/method(s) without touching existing data.");
+      await persist();
+    }
   } else {
     STATE = buildBaselineState();
     await store.saveState(STATE);
@@ -225,6 +245,26 @@ io.on("connection", (socket) => {
       if (!CAT_LABEL[cat]) return socket.emit("action-rejected", { message: "請選擇有效的遊戲類別。" });
       if (office !== "north" && office !== "central") return socket.emit("action-rejected", { message: "請選擇有效的開發辦公室。" });
       STATE.staging.push({ uid: uidCounter++, name, cat, office });
+      await persist();
+      io.emit("state", STATE);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
+  // Casino/mainstream/outsource categories aren't inherently platform-exclusive,
+  // so this creates one identical tag per platform in one shot (still lands in
+  // staging — the team drags each copy out to whichever platform/date it belongs).
+  socket.on("add-chip-batch", async ({ name, cat, office, count }) => {
+    try {
+      name = (name || "").trim().slice(0, 60);
+      if (!name) return socket.emit("action-rejected", { message: "請輸入遊戲名稱。" });
+      if (!CAT_LABEL[cat]) return socket.emit("action-rejected", { message: "請選擇有效的遊戲類別。" });
+      if (office !== "north" && office !== "central") return socket.emit("action-rejected", { message: "請選擇有效的開發辦公室。" });
+      const n = Math.max(1, Math.min(20, Number(count) || PLATFORMS.length));
+      for (let i = 0; i < n; i++) {
+        STATE.staging.push({ uid: uidCounter++, name, cat, office });
+      }
       await persist();
       io.emit("state", STATE);
     } catch (e) {
