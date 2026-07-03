@@ -174,7 +174,6 @@ let viewerCount = 0;
 io.on("connection", (socket) => {
   viewerCount++;
   io.emit("viewers", viewerCount);
-
   socket.emit("meta", { PLATFORMS, METHODS, MONTHS, DATE_COLS });
   socket.emit("state", STATE);
 
@@ -245,15 +244,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("restore-plan", async () => {
-    try {
-      STATE = buildBaselineState();
-      await persist();
-      io.emit("state", STATE);
-    } catch (e) {
-      console.error(e);
-    }
-  });
 });
 
 const PORT = process.env.PORT || 3000;
