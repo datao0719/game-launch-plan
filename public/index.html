@@ -261,12 +261,9 @@
     <div class="reset-btn" id="resetBtn">清除所有篩選</div>
   </div>
 
-  <div class="panel-row panel-divider">
+  <div class="panel-row panel-divider" id="platformFilterRow">
     <span class="flabel">平台篩選</span>
     <button class="pbtn active" data-platform="all">全部平台</button>
-    <button class="pbtn" data-platform="PT">PT</button>
-    <button class="pbtn" data-platform="BP">BP</button>
-    <button class="pbtn" data-platform="OKB">OKB</button>
   </div>
 
   <div class="panel-row panel-divider creator">
@@ -325,8 +322,21 @@ socket.on("viewers", (n)=>{
 
 socket.on("meta", (meta)=>{
   PLATFORMS = meta.PLATFORMS; METHODS = meta.METHODS; MONTHS = meta.MONTHS; DATE_COLS = meta.DATE_COLS;
+  buildPlatformFilterButtons();
   buildTable(); // in case "state" already arrived before "meta"
 });
+
+function buildPlatformFilterButtons(){
+  document.querySelectorAll("#platformFilterRow .pbtn[data-platform]:not([data-platform='all'])").forEach(b=>b.remove());
+  const row = document.getElementById("platformFilterRow");
+  PLATFORMS.forEach(p=>{
+    const btn = document.createElement("button");
+    btn.className = "pbtn";
+    btn.dataset.platform = p;
+    btn.textContent = p;
+    row.appendChild(btn);
+  });
+}
 
 socket.on("state", (state)=>{
   STATE = state;
@@ -345,8 +355,10 @@ function showToast(msg, isWarn){
 }
 socket.on("action-rejected", ({message})=> showToast("⚠ 無法放置：\n" + message, true));
 
+function escAttr(s){ return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
+
 function chipHtml(chip){
-  return `<div class="game-chip cat-${chip.cat}" draggable="true" data-uid="${chip.uid}" data-cat="${chip.cat}" data-office="${chip.office||''}">
+  return `<div class="game-chip cat-${chip.cat}" draggable="true" data-uid="${chip.uid}" data-cat="${chip.cat}" data-office="${chip.office||''}" data-name="${escAttr(chip.name)}">
     <span class="name cat-${chip.cat}">${chip.name}</span>
     <span class="chip-del" data-del-uid="${chip.uid}" title="刪除標籤">×</span>
   </div>`;
@@ -394,13 +406,21 @@ function buildTable(){
 
   attachDragHandlers();
   attachDeleteHandlers();
+  attachPressHighlightHandlers();
   applyFilter();
 }
 
 let activeBg = null, activeCat = null, activeOffice = null, activePlatform = "all";
+let pressHighlightName = null; // set while a chip is being pressed/held down
 
 function applyFilter(){
   document.querySelectorAll(".game-chip").forEach(c=>{
+    if(pressHighlightName){
+      // press-and-hold override: only chips with the same game name stay visible,
+      // regardless of whatever category/office filters are currently active.
+      c.classList.toggle("dimmed", c.dataset.name !== pressHighlightName);
+      return;
+    }
     const matchCat = !activeCat || c.dataset.cat === activeCat;
     const matchOffice = !activeOffice || c.dataset.office === activeOffice;
     c.classList.toggle("dimmed", !(matchCat && matchOffice));
@@ -412,6 +432,33 @@ function applyFilter(){
   document.querySelectorAll("tbody.platform-group").forEach(tb=>{
     const p = tb.dataset.platformGroup;
     tb.style.display = (activePlatform==="all" || activePlatform===p) ? "" : "none";
+  });
+}
+
+function clearPressHighlight(){
+  if(pressHighlightName){
+    pressHighlightName = null;
+    applyFilter();
+  }
+}
+document.addEventListener("mouseup", clearPressHighlight);
+document.addEventListener("dragend", clearPressHighlight);
+// touch devices: long-press-ish — start on touchstart, clear on touchend/cancel
+document.addEventListener("touchend", clearPressHighlight);
+document.addEventListener("touchcancel", clearPressHighlight);
+
+// press-and-hold a chip *inside the schedule table* to spotlight every other
+// tag with the same game name (everything else dims out).
+function attachPressHighlightHandlers(){
+  document.querySelectorAll("#mainTable .game-chip").forEach(chip=>{
+    chip.addEventListener("mousedown", ()=>{
+      pressHighlightName = chip.dataset.name;
+      applyFilter();
+    });
+    chip.addEventListener("touchstart", ()=>{
+      pressHighlightName = chip.dataset.name;
+      applyFilter();
+    }, {passive:true});
   });
 }
 
@@ -499,13 +546,26 @@ document.querySelectorAll("#newGameOfficeGroup .opt-btn").forEach(btn=>{
     if(selectedOffice) btn.classList.add("selected");
   });
 });
+// these three categories aren't platform-exclusive by nature, so adding one
+// conveniently stamps out one copy per platform, ready to drag out individually.
+const MULTI_PLATFORM_CATS = ["casino", "mainstream", "outsource"];
+
 document.getElementById("addTagBtn").addEventListener("click", ()=>{
   const nameInput = document.getElementById("newGameName");
   const name = nameInput.value.trim();
   if(!name){ showToast("請先輸入遊戲名稱", true); nameInput.focus(); return; }
   if(!selectedCat){ showToast("請選擇遊戲類別", true); return; }
   if(!selectedOffice){ showToast("請選擇開發辦公室", true); return; }
-  socket.emit("add-chip", { name, cat: selectedCat, office: selectedOffice });
+
+  if(MULTI_PLATFORM_CATS.includes(selectedCat)){
+    const count = PLATFORMS.length || 4;
+    socket.emit("add-chip-batch", { name, cat: selectedCat, office: selectedOffice, count });
+    showToast(`已在暫存區產生 ${count} 個「${name}」標籤，可分別拖曳到各平台`, false);
+  } else {
+    socket.emit("add-chip", { name, cat: selectedCat, office: selectedOffice });
+    showToast(`已新增「${name}」到暫存區`, false);
+  }
+
   nameInput.value = "";
   selectedCat = null; selectedOffice = null;
   document.querySelectorAll("#newGameCatGroup .opt-btn, #newGameOfficeGroup .opt-btn").forEach(b=>b.classList.remove("selected"));
@@ -538,13 +598,13 @@ document.querySelectorAll("[data-filter-office]").forEach(tag=>{
     applyFilter();
   });
 });
-document.querySelectorAll(".pbtn").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    activePlatform = btn.dataset.platform;
-    document.querySelectorAll(".pbtn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    applyFilter();
-  });
+document.getElementById("platformFilterRow").addEventListener("click", (e)=>{
+  const btn = e.target.closest(".pbtn");
+  if(!btn) return;
+  activePlatform = btn.dataset.platform;
+  document.querySelectorAll(".pbtn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  applyFilter();
 });
 document.getElementById("resetBtn").addEventListener("click", ()=>{
   activeBg=null; activeCat=null; activeOffice=null; activePlatform="all";
