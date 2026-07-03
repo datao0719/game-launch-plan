@@ -267,7 +267,6 @@
     <button class="pbtn" data-platform="PT">PT</button>
     <button class="pbtn" data-platform="BP">BP</button>
     <button class="pbtn" data-platform="OKB">OKB</button>
-    <button class="restore-btn" id="restoreBtn">還原初始規劃（影響所有人）</button>
   </div>
 
   <div class="panel-row panel-divider creator">
@@ -305,7 +304,7 @@
     <table id="mainTable"></table>
   </div>
 </div>
-<div class="note">＊「一般上架」列收錄當期仍在線上、但非首發／獨家／全平台批次的遊戲，僅供對照。開發辦公室可透過上方「開發辦公室」標籤篩選查看。直接拖曳遊戲標籤即可調整上線月份、上線方式或平台——所有調整會即時存到伺服器，並同步推送給所有正在瀏覽這個網址的人。系統會檢查「只有類別為客製遊戲的標籤才能放進客製獨家」「客製獨家（已賣斷）」與「首發優先」規則，違反規則的調整會被擋下並提示原因。滑鼠移到標籤右上角可以刪除標籤。「還原初始規劃」會讓所有人的畫面都回到試算表原始版本，請謹慎使用。</div>
+<div class="note">＊「一般上架」列收錄當期仍在線上、但非首發／獨家／全平台批次的遊戲，僅供對照。開發辦公室可透過上方「開發辦公室」標籤篩選查看。直接拖曳遊戲標籤即可調整上線月份、上線方式或平台——所有調整會即時存到伺服器，並同步推送給所有正在瀏覽這個網址的人。系統會檢查「只有類別為客製遊戲的標籤才能放進客製獨家」「客製獨家（已賣斷）」與「首發優先」規則，違反規則的調整會被擋下並提示原因。滑鼠移到標籤右上角可以刪除標籤。</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -326,12 +325,12 @@ socket.on("viewers", (n)=>{
 
 socket.on("meta", (meta)=>{
   PLATFORMS = meta.PLATFORMS; METHODS = meta.METHODS; MONTHS = meta.MONTHS; DATE_COLS = meta.DATE_COLS;
-  buildTable();
+  buildTable(); // in case "state" already arrived before "meta"
 });
 
 socket.on("state", (state)=>{
   STATE = state;
-  buildTable();
+  buildTable(); // in case "meta" already arrived before "state"
 });
 
 let toastTimer = null;
@@ -510,11 +509,6 @@ document.getElementById("addTagBtn").addEventListener("click", ()=>{
   nameInput.value = "";
   selectedCat = null; selectedOffice = null;
   document.querySelectorAll("#newGameCatGroup .opt-btn, #newGameOfficeGroup .opt-btn").forEach(b=>b.classList.remove("selected"));
-});
-
-document.getElementById("restoreBtn").addEventListener("click", ()=>{
-  if(!confirm("確定要還原成試算表原始規劃嗎？這會清除目前所有人做過的調整與暫存標籤，且無法復原。")) return;
-  socket.emit("restore-plan");
 });
 
 document.querySelectorAll("[data-filter-bg]").forEach(tag=>{
