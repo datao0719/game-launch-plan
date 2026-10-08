@@ -40,6 +40,26 @@
     border:1px solid #c7d2fe; border-radius:14px; padding:3px 10px;
   }
 
+  /* ---------- download button + menu ---------- */
+  .dl-wrap{ position:relative; display:inline-block; margin-left:auto; }
+  .dl-btn{
+    font-size:13px; font-weight:700; color:#fff; background:var(--head);
+    border:none; border-radius:8px; padding:7px 16px; cursor:pointer; font-family:inherit;
+  }
+  .dl-btn:hover{ opacity:.88; }
+  .dl-menu{
+    display:none; position:absolute; right:0; top:calc(100% + 6px); z-index:50;
+    background:#fff; border:1px solid var(--border); border-radius:10px;
+    box-shadow:0 8px 24px rgba(20,30,60,0.15); min-width:260px; overflow:hidden;
+  }
+  .dl-menu.open{ display:block; }
+  .dl-item{
+    display:block; width:100%; text-align:left; background:#fff; border:none;
+    padding:10px 14px; cursor:pointer; font-family:inherit; font-size:13px; color:#1c1f26;
+  }
+  .dl-item:hover{ background:#f1f5f9; }
+  .dl-item small{ display:block; color:#697180; font-size:12px; margin-top:2px; }
+
   /* ---------- unified control panel ---------- */
   .control-panel{
     background:#fff; border:1px solid var(--border); border-radius:14px;
@@ -227,6 +247,13 @@
   <span><span class="conn-dot" id="connDot"></span> <span id="connText">連線中…</span></span>
   <span class="viewer-badge" id="viewerBadge">👀 1 人正在瀏覽</span>
   <span>所有調整會即時同步給目前正在看這個網址的所有人</span>
+  <div class="dl-wrap" id="dlWrap">
+    <button class="dl-btn" id="dlBtn" type="button">⬇ 下載目前內容</button>
+    <div class="dl-menu" id="dlMenu">
+      <button class="dl-item" type="button" id="dlCsv">下載 Excel 表格（.csv）<small>用 Excel 開啟，方便閱讀、列印</small></button>
+      <button class="dl-item" type="button" id="dlJson">下載備份檔（.json）<small>完整資料備份，可用來還原整份排程</small></button>
+    </div>
+  </div>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -397,7 +424,10 @@ function buildTable(){
     tbody += "</tbody>";
   });
 
-  document.getElementById("mainTable").innerHTML = thead + tbody;
+  const mainTable = document.getElementById("mainTable");
+  mainTable.innerHTML = thead + tbody;
+  // 欄位數會隨日期範圍變動：依欄數計算最小寬度（平台欄 96 + 上線方式欄 118 + 每個日期欄 132）
+  mainTable.style.minWidth = (96 + 118 + DATE_COLS.length * 132) + "px";
 
   const stagingEl = document.getElementById("stagingChips");
   stagingEl.innerHTML = STATE.staging.length
@@ -409,6 +439,66 @@ function buildTable(){
   attachPressHighlightHandlers();
   applyFilter();
 }
+
+// ---------- 下載目前內容 ----------
+function pad2(n){ return String(n).padStart(2,"0"); }
+function fileStamp(){
+  const d = new Date();
+  return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}`;
+}
+function downloadFile(filename, mime, content){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function csvCell(v){
+  const s = String(v == null ? "" : v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+function buildCsv(){
+  // 第一列：月份（逐欄標示，方便在 Excel 篩選）；第二列：日期；之後每列一個「平台 × 上線方式」
+  const monthRow = ["", ""];
+  MONTHS.forEach(m=> m.dates.forEach(()=> monthRow.push(m.label)));
+  const dateRow = ["平台", "上線方式", ...DATE_COLS];
+  const rows = [monthRow, dateRow];
+  PLATFORMS.forEach(p=>{
+    METHODS.forEach(m=>{
+      const line = [p, m.label];
+      for(let i=0;i<DATE_COLS.length;i++){
+        const chips = (STATE[p][m.key][i] || []);
+        line.push(chips.map(c=>c.name).join("、"));
+      }
+      rows.push(line);
+    });
+  });
+  rows.push([]);
+  rows.push(["暫存區", "", ...STATE.staging.map(c=>c.name)]);
+  // 開頭加 BOM，Excel 才會正確顯示中文
+  return "﻿" + rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
+}
+function closeDlMenu(){ document.getElementById("dlMenu").classList.remove("open"); }
+document.getElementById("dlBtn").addEventListener("click", (e)=>{
+  e.stopPropagation();
+  document.getElementById("dlMenu").classList.toggle("open");
+});
+document.addEventListener("click", (e)=>{
+  if(!document.getElementById("dlWrap").contains(e.target)) closeDlMenu();
+});
+document.getElementById("dlCsv").addEventListener("click", ()=>{
+  closeDlMenu();
+  if(!STATE || !PLATFORMS.length){ showToast("資料尚未載入完成，請稍後再試。", true); return; }
+  downloadFile(`game-launch-plan-${fileStamp()}.csv`, "text/csv;charset=utf-8", buildCsv());
+  showToast("已下載 Excel 表格（.csv）");
+});
+document.getElementById("dlJson").addEventListener("click", ()=>{
+  closeDlMenu();
+  if(!STATE){ showToast("資料尚未載入完成，請稍後再試。", true); return; }
+  downloadFile(`game-launch-plan-backup-${fileStamp()}.json`, "application/json;charset=utf-8", JSON.stringify(STATE, null, 2));
+  showToast("已下載備份檔（.json）");
+});
 
 let activeBg = null, activeCat = null, activeOffice = null, activePlatform = "all";
 let pressHighlightName = null; // set while a chip is being pressed/held down

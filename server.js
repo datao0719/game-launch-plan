@@ -78,9 +78,19 @@ async function initState() {
         }
       });
     });
+    // 日期欄位擴充後，舊資料每列的長度會比 DATE_COLS 短：只在尾端補空格，既有位置不動。
+    PLATFORMS.forEach((p) =>
+      METHODS.forEach((m) => {
+        const row = STATE[p][m.key];
+        while (row.length < DATE_COLS.length) {
+          row.push([]);
+          migrated = true;
+        }
+      })
+    );
     recomputeUidCounter(STATE);
     if (migrated) {
-      console.log("Migrated stored state: added new platform(s)/method(s) without touching existing data.");
+      console.log("Migrated stored state: added new platform(s)/method(s)/date column(s) without touching existing data.");
       await persist();
     }
   } else {
